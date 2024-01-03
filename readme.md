@@ -8,11 +8,11 @@
 5. Update task (title/description/date)
 6. Utilized `clap` to make the interface more user-friendly
 7. Documentation added (comments throughout the code)
+8. Some additional features like sorting based on different criteria
+9. Added priority to tasks
 
 ### TODO:
-1. Some additional features like sorting based on different criteria
-2. Add priority to tasks
-3. Enhance the interface, because it looks ugly right now
+1. Enhance the interface, because it looks ugly right now
 
 ### Plans after finishing
 As it is a pet-project to get the hang of rust, the next logical step would be to extend the project for it to work in web using something like `actix`
