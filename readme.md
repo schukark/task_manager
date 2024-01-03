@@ -4,13 +4,13 @@
 1. Add/remove task
 2. Mark task completed
 3. List all tasks
+4. Save the tasks on disk using serde to have some persistence
 
 ### TODO:
 1. Update task (title/description/date)
-2. Save the tasks on disk using serde to have some persistence
-3. Utilize `clap` to make the interface more user-friendly
-4. Documentation
-5. Some additional features
+2. Utilize `clap` to make the interface more user-friendly
+3. Documentation
+4. Some additional features
 
 
 ### Plans after finishing

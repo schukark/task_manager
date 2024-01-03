@@ -1,5 +1,5 @@
-use chrono::{DateTime, NaiveDateTime, Local, TimeZone};
-use std::{io, error::Error, fmt};
+use chrono::{DateTime, NaiveDateTime, Utc, TimeZone};
+use std::{io, error::Error, fmt, fs};
 use serde::{Serialize, Deserialize};
 
 fn read_string() -> String {
@@ -29,16 +29,16 @@ impl Error for TaskNotFoundError {
 
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Task {
     title: String,
     description: String,
-    due_date: Option<DateTime<Local>>,
+    due_date: Option<DateTime<Utc>>,
     status: bool,
 }
 
 impl Task {
-    fn new(title: String, description: String, due_date: Option<DateTime<Local>>) -> Task {
+    fn new(title: String, description: String, due_date: Option<DateTime<Utc>>) -> Task {
         Task {
             title,
             description,
@@ -55,7 +55,7 @@ impl fmt::Display for Task {
             due_date = String::from("Not specified");
         }
         else {
-            due_date = self.due_date.unwrap().to_rfc2822();
+            due_date = self.due_date.unwrap().format("%d-%m-%Y %H:%M:%S").to_string();
         }
 
         let status: String;
@@ -87,6 +87,7 @@ impl fmt::Display for Task {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TaskManager {
     tasks: Vec<Task>,
 }
@@ -103,7 +104,7 @@ impl TaskManager {
         println!("Enter the task description");
         let description = read_string();
 
-        println!("Enter the time in the following format: YYYY-MM-DD HH:MM:SS or enter none if the date shouldn't be specified");
+        println!("Enter the time in the following format: DD-MM-YYYY HH:MM:SS or enter none if the date shouldn't be specified");
         let datetime = read_string();
         
         if datetime.eq("none") {
@@ -111,9 +112,9 @@ impl TaskManager {
         }
         else {
             let datetime = 
-                NaiveDateTime::parse_from_str(&datetime, "%Y-%m-%d %H:%M:%S")?;
+                NaiveDateTime::parse_from_str(&datetime, "%d-%m-%Y %H:%M:%S")?;
             
-                self.tasks.push(Task::new(title, description, Some(Local.from_local_datetime(&datetime).unwrap())));
+                self.tasks.push(Task::new(title, description, Some(TimeZone::from_utc_datetime(&Utc, &datetime))));
         }
         println!("Added task:");
         println!("{}", self.tasks[self.tasks.len() - 1]);
@@ -157,5 +158,14 @@ impl TaskManager {
 
     pub fn update(&mut self) -> Result<(), Box<dyn Error>> {
         todo!();
+    }
+}
+
+impl Drop for TaskManager {
+    fn drop(&mut self) {
+        let content = serde_json::to_string(&self).unwrap();
+        if let Err(error) = fs::write("data.txt", content) {
+            eprintln!("Error writing to the file: {error}");
+        }
     }
 }
