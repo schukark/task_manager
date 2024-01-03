@@ -7,18 +7,23 @@ use clap::{Parser, value_parser};
 #[clap(author, version, about, long_about=None)]
 pub struct Options {
     #[clap(short, long, action)]
+    /// Adds a task to the list
     pub add: bool,
 
     #[clap(short, long, action)]
+    /// Removes a task from the list
     pub remove: bool,
 
     #[clap(short, long, action)]
+    /// Marks the task as complete
     pub complete: bool,
 
     #[clap(short, long, action)]
+    /// Prints the list of all tasks
     pub list: bool,
 
     #[clap(short, long, action)]
+    /// Updates the task title/description or due date
     pub update: bool,
 }
 
