@@ -1,7 +1,40 @@
-use task_manager::TaskManager;
+use chrono::{DateTime, Utc};
+use task_manager::{TaskManager, Task};
 use std::{io, fs};
+use clap::{Parser, value_parser};
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about=None)]
+pub struct Options {
+    #[clap(short, long, action)]
+    pub add: bool,
+
+    #[clap(short, long, action)]
+    pub remove: bool,
+
+    #[clap(short, long, action)]
+    pub complete: bool,
+
+    #[clap(short, long, action)]
+    pub list: bool,
+
+    #[clap(short, long, action)]
+    pub update: bool,
+}
+
+#[derive(Debug)]
+pub enum Commands {
+    Add,
+    Remove,
+    Complete,
+    List,
+    Update,
+    None,
+}
 
 fn main() {
+    let args = Options::parse();
+
     let mut task_manager;
 
     if let Ok(contents) = fs::read_to_string("data.txt") {
@@ -10,59 +43,60 @@ fn main() {
     else {
         task_manager = TaskManager::new();
     }
-
-    let help_string = "TaskManager supports the following functions:
-add - add a new task
-help - to print help
-list - to list all the tasks
-complete - to mark a task as complete
-update - to update an existing task
-remove - to remove the task completely
-exit - to exit the program";
-
-    println!("{}", help_string);
-
-    loop {
-        let mut input: String = String::new();
-        io::stdin().read_line(&mut input).expect("Could't read input");
-        input.pop();
-        
-        match &input[..] {
-            "add" => {
-                if task_manager.add_task().is_err() {
-                    println!("Couldn't add the task due to incorrect input format");
-                }
-
-            },
-            "help" => {
-                println!("{}", help_string);
-            },
-            "list" => {
-                task_manager.list_items();
-            },
-            "remove" => {
-                if task_manager.delete_task().is_err() {
-                    println!("Couldn't delete the task due to incorrect input");
-                }
-            },
-            "complete" => {
-                if task_manager.complete_task().is_err() {
-                    println!("Couldn't mark the task as complete due to incorrect input");
-                }
-            },
-            "update" => {
-                if task_manager.update().is_err() {
-                    println!("Couldn't update the task due to incorrect input");
-                }
-            }
-            "exit" => {
-                break;
-            }
-            _ => {
-                println!("Unknown command");
-            }
-        }
+    
+    if args.add as i8 + args.complete as i8 + args.remove as i8 + args.list as i8 + args.update as i8 > 1 {
+        println!("Can't have more than one command line argument");
+        std::process::exit(0);
     }
 
-    println!("Good bye!");
+    let input;
+
+    if args.add {
+        input = Commands::Add;
+    }
+    else if args.complete {
+        input = Commands::Complete;
+    }
+    else if args.remove {
+        input = Commands::Remove;
+    }
+    else if args.list {
+        input = Commands::List;
+    }
+    else if args.update {
+        input = Commands::Update;
+    }
+    else {
+        input = Commands::None;
+    }
+    
+    match input {
+        Commands::Add => {
+            if task_manager.add_task().is_err() {
+                println!("Couldn't add the task due to incorrect input format");
+            }
+
+        },
+        Commands::List => {
+            task_manager.list_items();
+        },
+        Commands::Remove => {
+            if task_manager.delete_task().is_err() {
+                println!("Couldn't delete the task due to incorrect input");
+            }
+        },
+        Commands::Complete => {
+            if task_manager.complete_task().is_err() {
+                println!("Couldn't mark the task as complete due to incorrect input");
+            }
+        },
+        Commands::Update => {
+            if task_manager.update().is_err() {
+                println!("Couldn't update the task due to incorrect input");
+            }
+        }
+        Commands::None => {
+            println!("Unknown command");
+        }
+    }
 }

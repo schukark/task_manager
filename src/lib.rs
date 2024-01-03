@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 
 fn read_string() -> String {
     let mut s: String = String::new();
-    io::stdin().read_line(&mut s).expect("Can' read string from stdin");
+    io::stdin().read_line(&mut s).expect("Can't read string from stdin");
 
     if s.ends_with('\n') {
         s.pop();
@@ -29,8 +29,21 @@ impl Error for TaskNotFoundError {
 
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Task {
+#[derive(Debug)]
+struct IncorrectOptionError;
+
+impl fmt::Display for IncorrectOptionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "No such option")
+    }
+}
+
+impl Error for IncorrectOptionError {
+
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Task {
     title: String,
     description: String,
     due_date: Option<DateTime<Utc>>,
@@ -97,6 +110,18 @@ impl TaskManager {
         TaskManager {tasks: Vec::new()}
     }
 
+    fn parse_data(line: String) -> Result<Option<DateTime<Utc>>, Box<dyn Error>> {
+        if line.eq("none") {
+            return Ok(None);
+        }
+        else {
+            let datetime = 
+                NaiveDateTime::parse_from_str(&line, "%d-%m-%Y %H:%M:%S")?;
+            
+            return Ok(Some(TimeZone::from_utc_datetime(&Utc, &datetime)));
+        }
+    }
+
     pub fn add_task(&mut self) -> Result<(), Box<dyn Error>> {
         println!("Enter task title");
         let title = read_string();
@@ -107,15 +132,13 @@ impl TaskManager {
         println!("Enter the time in the following format: DD-MM-YYYY HH:MM:SS or enter none if the date shouldn't be specified");
         let datetime = read_string();
         
-        if datetime.eq("none") {
-            self.tasks.push(Task::new(title, description, None));
+        if let Ok(datetime) = TaskManager::parse_data(datetime) {
+            self.tasks.push(Task::new(title, description, datetime));
         }
         else {
-            let datetime = 
-                NaiveDateTime::parse_from_str(&datetime, "%d-%m-%Y %H:%M:%S")?;
-            
-                self.tasks.push(Task::new(title, description, Some(TimeZone::from_utc_datetime(&Utc, &datetime))));
+            return Err(Box::new(IncorrectOptionError));
         }
+
         println!("Added task:");
         println!("{}", self.tasks[self.tasks.len() - 1]);
 
@@ -157,7 +180,40 @@ impl TaskManager {
     }
 
     pub fn update(&mut self) -> Result<(), Box<dyn Error>> {
-        todo!();
+        println!("Print task id you would like to change");
+        let index: usize = read_string().parse()?;
+
+        if index > self.tasks.len() || index == 0 {
+            return Err(Box::new(TaskNotFoundError));
+        }
+
+        println!("Print 'title'/'description' or 'due date' if you'd like to change those things");
+        let input = read_string();
+
+        println!("Print the changed title/description/due date");
+        let changed_string = read_string();
+
+        match &input[..] {
+            "title" => {
+                self.tasks[index - 1].title = changed_string;
+            },
+            "description" => {
+                self.tasks[index - 1].description = changed_string;
+            },
+            "due date" => {
+                if let Ok(new_date) = TaskManager::parse_data(changed_string) {
+                    self.tasks[index - 1].due_date = new_date;
+                }
+                else {
+                    return Err(Box::new(IncorrectOptionError));
+                }
+            },
+            _ => {
+                return Err(Box::new(IncorrectOptionError));
+            }
+        }
+
+        Ok(())
     }
 }
 
