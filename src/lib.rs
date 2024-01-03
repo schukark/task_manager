@@ -2,6 +2,10 @@ use chrono::{DateTime, NaiveDateTime, Utc, TimeZone};
 use std::{io, error::Error, fmt, fs};
 use serde::{Serialize, Deserialize};
 
+/*
+    Helper boiler plate code to input a string and 
+    cut the \n or \r symbol form the end
+*/
 fn read_string() -> String {
     let mut s: String = String::new();
     io::stdin().read_line(&mut s).expect("Can't read string from stdin");
@@ -16,6 +20,9 @@ fn read_string() -> String {
     s
 }
 
+/*
+    Custom error that means there is no task with such id
+*/
 #[derive(Debug)]
 struct TaskNotFoundError;
 
@@ -29,6 +36,9 @@ impl Error for TaskNotFoundError {
 
 }
 
+/*
+    Custom error struct that means there is no such option to choose from
+*/
 #[derive(Debug)]
 struct IncorrectOptionError;
 
@@ -42,6 +52,13 @@ impl Error for IncorrectOptionError {
 
 }
 
+/*
+    The task struct with these fields:
+    - title
+    - description
+    - due_date
+    - completeness status
+*/
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Task {
     title: String,
@@ -51,6 +68,9 @@ pub struct Task {
 }
 
 impl Task {
+    /*
+        Task constructor from all the fields
+     */
     fn new(title: String, description: String, due_date: Option<DateTime<Utc>>) -> Task {
         Task {
             title,
@@ -61,6 +81,9 @@ impl Task {
     }
 }
 
+/*
+    Implementation of the Display trait
+*/
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let due_date: String;
@@ -99,17 +122,25 @@ impl fmt::Display for Task {
             str::repeat("-", max_string_len + 4), title, description, due_date, status, str::repeat("-", max_string_len + 4))
     }
 }
-
+/*
+    TaskManager struct that just stores all structs
+*/
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TaskManager {
     tasks: Vec<Task>,
 }
 
 impl TaskManager {
+    /*
+        TaskManager empty constructor
+     */
     pub fn new() -> TaskManager {
         TaskManager {tasks: Vec::new()}
     }
 
+    /*
+        Static private function to parse date time from string
+     */
     fn parse_data(line: String) -> Result<Option<DateTime<Utc>>, Box<dyn Error>> {
         if line.eq("none") {
             return Ok(None);
@@ -122,6 +153,9 @@ impl TaskManager {
         }
     }
 
+    /*
+        Function that adds the task, gets its input from stdin
+     */
     pub fn add_task(&mut self) -> Result<(), Box<dyn Error>> {
         println!("Enter task title");
         let title = read_string();
@@ -145,12 +179,18 @@ impl TaskManager {
         Ok(())
     }
 
+    /*
+        List all the items to stdin
+     */
     pub fn list_items(&self) {
         for (id, item) in self.tasks.iter().enumerate() {
             println!("Task id {}\n{item}", id + 1);
         }
     }
 
+    /*
+        Mark the task as complete, get its input from stdin    
+    */
     pub fn complete_task(&mut self) -> Result<(), Box<dyn Error>> {
         println!("Input the task id of the task you want to mark complete");
         let input: usize = read_string().parse()?;
@@ -165,6 +205,9 @@ impl TaskManager {
         Ok(())
     }
 
+    /*
+        Delete a task, gets the task id from stdin 
+    */
     pub fn delete_task(&mut self) -> Result<(), Box<dyn Error>> {
         println!("Input the task id you want deleted");
 
@@ -179,6 +222,9 @@ impl TaskManager {
         Ok(())
     }
 
+    /* 
+        Update the task with a given id, gets its id from stdin
+    */
     pub fn update(&mut self) -> Result<(), Box<dyn Error>> {
         println!("Print task id you would like to change");
         let index: usize = read_string().parse()?;
@@ -217,6 +263,10 @@ impl TaskManager {
     }
 }
 
+/* 
+    Implement the Drop trait for TaskManager
+    Saves the TaskManager struct to json-like txt file
+*/
 impl Drop for TaskManager {
     fn drop(&mut self) {
         let content = serde_json::to_string(&self).unwrap();

@@ -1,8 +1,11 @@
-use chrono::{DateTime, Utc};
-use task_manager::{TaskManager, Task};
-use std::{io, fs};
-use clap::{Parser, value_parser};
+use task_manager::TaskManager;
+use std::fs;
+use clap::Parser;
 
+
+/*
+    struct containing all the command line parameters
+*/
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about=None)]
 pub struct Options {
@@ -27,6 +30,9 @@ pub struct Options {
     pub update: bool,
 }
 
+/*
+    Helper enum to parse the command line arguments
+*/
 #[derive(Debug)]
 pub enum Commands {
     Add,
