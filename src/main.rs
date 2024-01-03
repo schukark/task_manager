@@ -2,7 +2,9 @@ use task_manager::TaskManager;
 use std::io;
 
 fn main() {
-    todo!("Implement serialization/derserialization using serde");
+    todo!("
+1. Implement serialization/derserialization using serde
+2. Consider storing DateTime<Utc> and convert on print instead of DateTime<Local>");
     let mut task_manager = TaskManager::new();
 
     let help_string = "TaskManager supports the following functions:
