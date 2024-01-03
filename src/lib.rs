@@ -57,6 +57,7 @@ impl Error for IncorrectOptionError {
     - title
     - description
     - due_date
+    - priority
     - completeness status
 */
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -64,6 +65,7 @@ pub struct Task {
     title: String,
     description: String,
     due_date: Option<DateTime<Utc>>,
+    priority: Priority,
     status: bool,
 }
 
@@ -71,12 +73,34 @@ impl Task {
     /*
         Task constructor from all the fields
      */
-    fn new(title: String, description: String, due_date: Option<DateTime<Utc>>) -> Task {
+    fn new(title: String, description: String, due_date: Option<DateTime<Utc>>, priority: Option<Priority>) -> Task {
         Task {
             title,
             description,
             due_date,
+            priority: priority.unwrap_or(Priority::Low),
             status: false
+        }
+    }
+}
+
+/* 
+    Priority enum
+*/
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+enum Priority {
+    High,
+    Medium,
+    Low,
+}
+
+impl Priority {
+    fn get_numerical(&self) -> i8 {
+        match self {
+            Priority::High => 3,
+            Priority::Medium => 2,
+            Priority::Low => 1,
         }
     }
 }
@@ -113,13 +137,26 @@ impl fmt::Display for Task {
             )
         );
 
+        let priority = match self.priority {
+            Priority::High => "High",
+            Priority::Medium => "Medium",
+            Priority::Low => "Low",
+        };
+        let priority = priority.to_string();
+
+        let max_string_len = usize::max(
+            max_string_len,
+            priority.len() + String::from("Priority: ").len()
+        );
+
         let title = self.title.clone() + &str::repeat(" ", max_string_len - self.title.len() - String::from("Title: ").len());
         let description = self.description.clone() + &str::repeat(" ", max_string_len - self.description.len() - String::from("Description: ").len());
         let due_date = due_date.clone() + &str::repeat(" ", max_string_len - due_date.len() - String::from("Due date: ").len());
         let status = status.clone() + &str::repeat(" ", max_string_len - status.len() - String::from("Status: ").len());
+        let priority = priority.clone() + &str::repeat(" ", max_string_len - priority.len() - String::from("Priority: ").len());
         
-        write!(f, "{}\n| Title: {} |\n| Description: {} |\n| Due date: {} |\n| Status: {} |\n{}", 
-            str::repeat("-", max_string_len + 4), title, description, due_date, status, str::repeat("-", max_string_len + 4))
+        write!(f, "{}\n| Title: {} |\n| Description: {} |\n| Due date: {} |\n| Priority: {} |\n| Status: {} |\n{}", 
+            str::repeat("-", max_string_len + 4), title, description, due_date, priority, status, str::repeat("-", max_string_len + 4))
     }
 }
 /*
@@ -165,9 +202,22 @@ impl TaskManager {
 
         println!("Enter the time in the following format: DD-MM-YYYY HH:MM:SS or enter none if the date shouldn't be specified");
         let datetime = read_string();
+
+        println!("Enter the task priority: High/Medium/Low or none");
+        let priority = read_string();
+
+        let priority = match &priority[..] {
+            "High" => Some(Priority::High),
+            "Medium" => Some(Priority::Medium),
+            "Low" => Some(Priority::Low),
+            "none" => None,
+            _ => {
+                return Err(Box::new(IncorrectOptionError));
+            }
+        };
         
         if let Ok(datetime) = TaskManager::parse_data(datetime) {
-            self.tasks.push(Task::new(title, description, datetime));
+            self.tasks.push(Task::new(title, description, datetime, priority));
         }
         else {
             return Err(Box::new(IncorrectOptionError));
@@ -254,6 +304,38 @@ impl TaskManager {
                     return Err(Box::new(IncorrectOptionError));
                 }
             },
+            _ => {
+                return Err(Box::new(IncorrectOptionError));
+            }
+        }
+
+        Ok(())
+    }
+
+    /* 
+        Sorts the tasks based on some criteria
+    */
+    pub fn sort(&self) -> Result<(), Box<dyn Error>> {
+        println!("Print 'priority' or 'due date' to sort by these parameters");
+        let input = read_string();
+
+        match &input[..] {
+            "priority" => {
+                let mut tasks = self.tasks.clone();
+                tasks.sort_by(|a, b| a.priority.get_numerical().cmp(&b.priority.get_numerical()));
+                
+                for (id, item) in tasks.iter().enumerate() {
+                    println!("Task id {}\n{item}", id + 1);
+                } 
+            }
+            "due date" => {
+                let mut tasks = self.tasks.clone();
+                tasks.sort_by(|a, b| a.due_date.cmp(&b.due_date));
+                
+                for (id, item) in tasks.iter().enumerate() {
+                    println!("Task id {}\n{item}", id + 1);
+                } 
+            }
             _ => {
                 return Err(Box::new(IncorrectOptionError));
             }

@@ -28,6 +28,10 @@ pub struct Options {
     #[clap(short, long, action)]
     /// Updates the task title/description or due date
     pub update: bool,
+
+    #[clap(short, long, action)]
+    /// Sort the tasks based on some criteria
+    pub sort: bool
 }
 
 /*
@@ -40,6 +44,7 @@ pub enum Commands {
     Complete,
     List,
     Update,
+    Sort,
     None,
 }
 
@@ -55,7 +60,8 @@ fn main() {
         task_manager = TaskManager::new();
     }
     
-    if args.add as i8 + args.complete as i8 + args.remove as i8 + args.list as i8 + args.update as i8 > 1 {
+    if args.add as i8 + args.complete as i8 + args.remove as i8 + 
+        args.list as i8 + args.update as i8 + args.sort as i8 > 1 {
         println!("Can't have more than one command line argument");
         std::process::exit(0);
     }
@@ -76,6 +82,9 @@ fn main() {
     }
     else if args.update {
         input = Commands::Update;
+    }
+    else if args.sort {
+        input = Commands::Sort;
     }
     else {
         input = Commands::None;
@@ -101,6 +110,11 @@ fn main() {
                 println!("Couldn't mark the task as complete due to incorrect input");
             }
         },
+        Commands::Sort => {
+            if task_manager.sort().is_err() {
+                println!("Can't sort the tasks due to an incorrect input");
+            }
+        }
         Commands::Update => {
             if task_manager.update().is_err() {
                 println!("Couldn't update the task due to incorrect input");
