@@ -1,14 +1,16 @@
-use chrono::{DateTime, NaiveDateTime, Utc, TimeZone};
-use std::{io, error::Error, fmt, fs};
-use serde::{Serialize, Deserialize};
+use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+use serde::{Deserialize, Serialize};
+use std::{error::Error, fmt, fs, io};
 
 /*
-    Helper boiler plate code to input a string and 
+    Helper boiler plate code to input a string and
     cut the \n or \r symbol form the end
 */
 fn read_string() -> String {
     let mut s: String = String::new();
-    io::stdin().read_line(&mut s).expect("Can't read string from stdin");
+    io::stdin()
+        .read_line(&mut s)
+        .expect("Can't read string from stdin");
 
     if s.ends_with('\n') {
         s.pop();
@@ -32,9 +34,7 @@ impl fmt::Display for TaskNotFoundError {
     }
 }
 
-impl Error for TaskNotFoundError {
-
-}
+impl Error for TaskNotFoundError {}
 
 /*
     Custom error struct that means there is no such option to choose from
@@ -48,9 +48,7 @@ impl fmt::Display for IncorrectOptionError {
     }
 }
 
-impl Error for IncorrectOptionError {
-
-}
+impl Error for IncorrectOptionError {}
 
 /*
     The task struct with these fields:
@@ -71,20 +69,25 @@ pub struct Task {
 
 impl Task {
     /*
-        Task constructor from all the fields
-     */
-    fn new(title: String, description: String, due_date: Option<DateTime<Utc>>, priority: Option<Priority>) -> Task {
+       Task constructor from all the fields
+    */
+    fn new(
+        title: String,
+        description: String,
+        due_date: Option<DateTime<Utc>>,
+        priority: Option<Priority>,
+    ) -> Task {
         Task {
             title,
             description,
             due_date,
             priority: priority.unwrap_or(Priority::Low),
-            status: false
+            status: false,
         }
     }
 }
 
-/* 
+/*
     Priority enum
 */
 
@@ -110,31 +113,29 @@ impl Priority {
 */
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let due_date: String;
-        if self.due_date.is_none() {
-            due_date = String::from("Not specified");
-        }
-        else {
-            due_date = self.due_date.unwrap().format("%d-%m-%Y %H:%M:%S").to_string();
-        }
+        let due_date = match self.due_date.is_none() {
+            true => String::from("Not specified"),
+            false => self
+                .due_date
+                .unwrap()
+                .format("%d-%m-%Y %H:%M:%S")
+                .to_string(),
+        };
 
-        let status: String;
-        if self.status {
-            status = String::from("Completed");
-        }
-        else {
-            status = String::from("Not completed");
-        }
+        let status = match self.status {
+            true => String::from("Completed"),
+            false => String::from("Not completed"),
+        };
 
         let max_string_len = usize::max(
             usize::max(
-                self.title.len() + String::from("Title: ").len(), 
-                self.description.len() + String::from("Description: ").len()
+                self.title.len() + String::from("Title: ").len(),
+                self.description.len() + String::from("Description: ").len(),
             ),
             usize::max(
                 due_date.len() + String::from("Due date: ").len(),
-                status.len() + String::from("Status: ").len()
-            )
+                status.len() + String::from("Status: ").len(),
+            ),
         );
 
         let priority = match self.priority {
@@ -146,15 +147,35 @@ impl fmt::Display for Task {
 
         let max_string_len = usize::max(
             max_string_len,
-            priority.len() + String::from("Priority: ").len()
+            priority.len() + String::from("Priority: ").len(),
         );
 
-        let title = self.title.clone() + &str::repeat(" ", max_string_len - self.title.len() - String::from("Title: ").len());
-        let description = self.description.clone() + &str::repeat(" ", max_string_len - self.description.len() - String::from("Description: ").len());
-        let due_date = due_date.clone() + &str::repeat(" ", max_string_len - due_date.len() - String::from("Due date: ").len());
-        let status = status.clone() + &str::repeat(" ", max_string_len - status.len() - String::from("Status: ").len());
-        let priority = priority.clone() + &str::repeat(" ", max_string_len - priority.len() - String::from("Priority: ").len());
-        
+        let title = self.title.clone()
+            + &str::repeat(
+                " ",
+                max_string_len - self.title.len() - String::from("Title: ").len(),
+            );
+        let description = self.description.clone()
+            + &str::repeat(
+                " ",
+                max_string_len - self.description.len() - String::from("Description: ").len(),
+            );
+        let due_date = due_date.clone()
+            + &str::repeat(
+                " ",
+                max_string_len - due_date.len() - String::from("Due date: ").len(),
+            );
+        let status = status.clone()
+            + &str::repeat(
+                " ",
+                max_string_len - status.len() - String::from("Status: ").len(),
+            );
+        let priority = priority.clone()
+            + &str::repeat(
+                " ",
+                max_string_len - priority.len() - String::from("Priority: ").len(),
+            );
+
         write!(f, "{}\n| Title: {} |\n| Description: {} |\n| Due date: {} |\n| Priority: {} |\n| Status: {} |\n{}", 
             str::repeat("-", max_string_len + 4), title, description, due_date, priority, status, str::repeat("-", max_string_len + 4))
     }
@@ -162,37 +183,35 @@ impl fmt::Display for Task {
 /*
     TaskManager struct that just stores all structs
 */
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct TaskManager {
     tasks: Vec<Task>,
 }
 
 impl TaskManager {
     /*
-        TaskManager empty constructor
-     */
+       TaskManager empty constructor
+    */
     pub fn new() -> TaskManager {
-        TaskManager {tasks: Vec::new()}
+        TaskManager { tasks: Vec::new() }
     }
 
     /*
-        Static private function to parse date time from string
-     */
+       Static private function to parse date time from string
+    */
     fn parse_data(line: String) -> Result<Option<DateTime<Utc>>, Box<dyn Error>> {
         if line.eq("none") {
-            return Ok(None);
-        }
-        else {
-            let datetime = 
-                NaiveDateTime::parse_from_str(&line, "%d-%m-%Y %H:%M:%S")?;
-            
-            return Ok(Some(TimeZone::from_utc_datetime(&Utc, &datetime)));
+            Ok(None)
+        } else {
+            let datetime = NaiveDateTime::parse_from_str(&line, "%d-%m-%Y %H:%M:%S")?;
+
+            Ok(Some(TimeZone::from_utc_datetime(&Utc, &datetime)))
         }
     }
 
     /*
-        Function that adds the task, gets its input from stdin
-     */
+       Function that adds the task, gets its input from stdin
+    */
     pub fn add_task(&mut self) -> Result<(), Box<dyn Error>> {
         println!("Enter task title");
         let title = read_string();
@@ -215,11 +234,11 @@ impl TaskManager {
                 return Err(Box::new(IncorrectOptionError));
             }
         };
-        
+
         if let Ok(datetime) = TaskManager::parse_data(datetime) {
-            self.tasks.push(Task::new(title, description, datetime, priority));
-        }
-        else {
+            self.tasks
+                .push(Task::new(title, description, datetime, priority));
+        } else {
             return Err(Box::new(IncorrectOptionError));
         }
 
@@ -230,8 +249,8 @@ impl TaskManager {
     }
 
     /*
-        List all the items to stdin
-     */
+       List all the items to stdin
+    */
     pub fn list_items(&self) {
         for (id, item) in self.tasks.iter().enumerate() {
             println!("Task id {}\n{item}", id + 1);
@@ -239,7 +258,7 @@ impl TaskManager {
     }
 
     /*
-        Mark the task as complete, get its input from stdin    
+        Mark the task as complete, get its input from stdin
     */
     pub fn complete_task(&mut self) -> Result<(), Box<dyn Error>> {
         println!("Input the task id of the task you want to mark complete");
@@ -256,7 +275,7 @@ impl TaskManager {
     }
 
     /*
-        Delete a task, gets the task id from stdin 
+        Delete a task, gets the task id from stdin
     */
     pub fn delete_task(&mut self) -> Result<(), Box<dyn Error>> {
         println!("Input the task id you want deleted");
@@ -272,7 +291,7 @@ impl TaskManager {
         Ok(())
     }
 
-    /* 
+    /*
         Update the task with a given id, gets its id from stdin
     */
     pub fn update(&mut self) -> Result<(), Box<dyn Error>> {
@@ -292,18 +311,17 @@ impl TaskManager {
         match &input[..] {
             "title" => {
                 self.tasks[index - 1].title = changed_string;
-            },
+            }
             "description" => {
                 self.tasks[index - 1].description = changed_string;
-            },
+            }
             "due date" => {
                 if let Ok(new_date) = TaskManager::parse_data(changed_string) {
                     self.tasks[index - 1].due_date = new_date;
-                }
-                else {
+                } else {
                     return Err(Box::new(IncorrectOptionError));
                 }
-            },
+            }
             _ => {
                 return Err(Box::new(IncorrectOptionError));
             }
@@ -312,7 +330,7 @@ impl TaskManager {
         Ok(())
     }
 
-    /* 
+    /*
         Sorts the tasks based on some criteria
     */
     pub fn sort(&self) -> Result<(), Box<dyn Error>> {
@@ -323,18 +341,18 @@ impl TaskManager {
             "priority" => {
                 let mut tasks = self.tasks.clone();
                 tasks.sort_by(|a, b| a.priority.get_numerical().cmp(&b.priority.get_numerical()));
-                
+
                 for (id, item) in tasks.iter().enumerate() {
                     println!("Task id {}\n{item}", id + 1);
-                } 
+                }
             }
             "due date" => {
                 let mut tasks = self.tasks.clone();
                 tasks.sort_by(|a, b| a.due_date.cmp(&b.due_date));
-                
+
                 for (id, item) in tasks.iter().enumerate() {
                     println!("Task id {}\n{item}", id + 1);
-                } 
+                }
             }
             _ => {
                 return Err(Box::new(IncorrectOptionError));
@@ -345,7 +363,7 @@ impl TaskManager {
     }
 }
 
-/* 
+/*
     Implement the Drop trait for TaskManager
     Saves the TaskManager struct to json-like txt file
 */

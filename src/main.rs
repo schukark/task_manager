@@ -1,7 +1,6 @@
-use task_manager::TaskManager;
-use std::fs;
 use clap::Parser;
-
+use std::fs;
+use task_manager::TaskManager;
 
 /*
     struct containing all the command line parameters
@@ -31,7 +30,7 @@ pub struct Options {
 
     #[clap(short, long, action)]
     /// Sort the tasks based on some criteria
-    pub sort: bool
+    pub sort: bool,
 }
 
 /*
@@ -55,13 +54,18 @@ fn main() {
 
     if let Ok(contents) = fs::read_to_string("data.txt") {
         task_manager = serde_json::from_str(&contents).unwrap();
-    }
-    else {
+    } else {
         task_manager = TaskManager::new();
     }
-    
-    if args.add as i8 + args.complete as i8 + args.remove as i8 + 
-        args.list as i8 + args.update as i8 + args.sort as i8 > 1 {
+
+    if args.add as i8
+        + args.complete as i8
+        + args.remove as i8
+        + args.list as i8
+        + args.update as i8
+        + args.sort as i8
+        > 1
+    {
         println!("Can't have more than one command line argument");
         std::process::exit(0);
     }
@@ -70,46 +74,39 @@ fn main() {
 
     if args.add {
         input = Commands::Add;
-    }
-    else if args.complete {
+    } else if args.complete {
         input = Commands::Complete;
-    }
-    else if args.remove {
+    } else if args.remove {
         input = Commands::Remove;
-    }
-    else if args.list {
+    } else if args.list {
         input = Commands::List;
-    }
-    else if args.update {
+    } else if args.update {
         input = Commands::Update;
-    }
-    else if args.sort {
+    } else if args.sort {
         input = Commands::Sort;
-    }
-    else {
+    } else {
         input = Commands::None;
     }
-    
+
     match input {
         Commands::Add => {
             if task_manager.add_task().is_err() {
                 println!("Couldn't add the task due to incorrect input format");
             }
-
-        },
+        }
         Commands::List => {
             task_manager.list_items();
-        },
+        }
         Commands::Remove => {
             if task_manager.delete_task().is_err() {
                 println!("Couldn't delete the task due to incorrect input");
             }
-        },
+        }
         Commands::Complete => {
             if task_manager.complete_task().is_err() {
                 println!("Couldn't mark the task as complete due to incorrect input");
             }
-        },
+        }
         Commands::Sort => {
             if task_manager.sort().is_err() {
                 println!("Can't sort the tasks due to an incorrect input");
